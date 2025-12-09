@@ -1,0 +1,14 @@
+# Node
+node_modules/
+dist/
+build/
+.env
+.DS_Store
+
+# Go
+gitmal/gitmal
+gitmal/dist/
+
+# Editor
+.vscode/
+.idea/
