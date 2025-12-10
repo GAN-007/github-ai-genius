@@ -16,10 +16,15 @@ class LLMFactory:
     
     @staticmethod
     def get_model(provider: str, model_name: str, temperature: float = 0.7) -> BaseChatModel:
-        api_key = vault.get_secret(f"{provider.upper()}_API_KEY")
-        
+        # Automatic Fallback Logic
+        if provider != "ollama":
+            api_key = vault.get_secret(f"{provider.upper()}_API_KEY")
+            if not api_key:
+                print(f"[LLM] Warning: {provider} key missing. Falling back to Ollama/Llama3.")
+                provider = "ollama"
+                model_name = "llama3"
+
         if provider == "openai":
-            if not api_key: raise ValueError("OpenAI API Key not found in Vault")
             return ChatOpenAI(model=model_name, temperature=temperature, api_key=api_key)
             
         elif provider == "anthropic":
@@ -77,12 +82,13 @@ class OllamaManager:
 
     @staticmethod
     def ensure_default_models():
-        """Ensures Llama 3 and other defaults are present."""
-        required = ["llama3", "mistral"]
+        """Ensures Llama 3.2 and other defaults are present."""
+        required = ["llama3.2", "llama3"] # Prioritize 3.2 as requested
         installed = OllamaManager.list_models()
         
         for model in required:
             if not any(model in m for m in installed):
+                print(f"[Ollama] Auto-installing required model: {model}")
                 OllamaManager.pull_model(model)
 
 llm_factory = LLMFactory()

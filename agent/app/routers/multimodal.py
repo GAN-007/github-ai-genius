@@ -3,8 +3,7 @@ from typing import List
 import shutil
 import os
 from core.config import settings
-# In a real implementation, we would import Whisper here
-# from services.whisper import transcribe_audio
+from services.voice import voice_service
 
 router = APIRouter()
 
@@ -19,12 +18,8 @@ async def process_voice_command(file: UploadFile = File(...)):
         with open(temp_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
-        # Placeholder for actual Whisper call
-        # transcription = transcribe_audio(temp_path)
-        
-        # For this standalone version without GPU, we simulate a response
-        # to ensure the frontend flow works.
-        transcription = "Simulated transcription: Analyze the repository structure."
+        # Real transcription call
+        transcription = voice_service.transcribe(temp_path)
         
         return {"text": transcription}
         
