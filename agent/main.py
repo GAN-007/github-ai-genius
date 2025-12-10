@@ -1,40 +1,30 @@
-import sys
-from auth.service import GitHubAuthService
-from rag.pipeline import RAGPipeline
-from orchestrator.engine import AgentOrchestrator
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.routers import agent, multimodal
+from core.config import settings
+import uvicorn
 
-# Mock clients for scaffolding
-class MockVectorDB:
-    def upsert(self, collection, points): pass
-    def search(self, query): return [{'id': 'mock_id', 'payload': {'name': 'mock_file'}}]
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+)
 
-class MockGraphDB:
-    def update_graph(self, node, edges): pass
-    def get_dependencies(self, node_id): return ['dep1', 'dep2']
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-def main():
-    print("Initializing GitHub AI Genius Agent Backend...")
-    
-    # Initialize Services
-    auth = GitHubAuthService(
-        app_id="APP_123", 
-        private_key_path="private_key.pem", 
-        vault_url="https://vault.internal"
-    )
-    
-    rag = RAGPipeline(
-        vector_db_client=MockVectorDB(),
-        graph_db_client=MockGraphDB()
-    )
-    
-    agent = AgentOrchestrator(auth, rag)
-    
-    # Example Usage
-    if len(sys.argv) > 1:
-        query = sys.argv[1]
-        agent.execute_task(query, "https://github.com/example/repo")
-    else:
-        print("Usage: python main.py <task_description>")
+# Routers
+app.include_router(agent.router, prefix="/api/v1/agent", tags=["agent"])
+app.include_router(multimodal.router, prefix="/api/v1/multimodal", tags=["multimodal"])
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "version": "2.0.0"}
 
 if __name__ == "__main__":
-    main()
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
