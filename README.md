@@ -1,3 +1,9 @@
+ <div align="center">
+
+<img width="450" height="450" alt="GHBanner" src="https://snipboard.io/D9qRS4.jpg" />
+</div>
+
+
 # GitHub AI Genius Agent
 
 ## Overview
