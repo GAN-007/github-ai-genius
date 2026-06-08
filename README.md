@@ -4,9 +4,9 @@
 
 # GitHub AI Genius Agent
 
-GitHub AI Genius is being rebuilt from a static blueprint into a local-first GitHub engineering assistant.
+GitHub AI Genius is a local-first GitHub engineering assistant for repository analysis, original project generation, local model planning, defensive review, and clean-room rebuild strategy.
 
-## Current committed foundation
+## Current platform capabilities
 
 This repository now includes:
 
@@ -14,12 +14,17 @@ This repository now includes:
 - domain models for repositories, files, findings, analysis reports, tasks, and results;
 - runtime settings loaded from environment variables;
 - a PyGithub-backed repository reader;
-- a repository analyzer that detects languages, frameworks, package managers, entrypoints, tests, licenses, secrets, and risky code patterns;
+- repository analysis for languages, frameworks, package managers, entrypoints, test commands, licenses, and risky patterns;
 - a defensive policy engine for license-aware reuse and safe engineering boundaries;
-- an Ollama client for local model execution;
-- a minimal Typer CLI entrypoint;
-- a minimal FastAPI health endpoint;
-- starter tests for policy and analyzer helpers.
+- Ollama local model integration;
+- Typer CLI commands for health checks, repository analysis, local prompts, and Django marketplace generation;
+- FastAPI endpoints through `github_ai_genius.api_v2:app`;
+- an orchestration layer for analyze, build, and plan tasks;
+- a SQLite FTS code index;
+- an original Django marketplace generator with accounts, listings, bookings, payments, settings, apps, and tests;
+- container support through `Containerfile` and `compose.yml`;
+- documentation for architecture, safety, usage, gaps, and agent operation;
+- tests for policy, analyzer helpers, generator, indexer, and orchestrator.
 
 ## Install locally
 
@@ -28,44 +33,43 @@ python -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -e '.[dev]'
+cp env.example .env
 ```
 
-Run the CLI health check:
+## CLI
 
 ```bash
 genius doctor
+genius repo analyze GAN-007/github-ai-genius
+genius ask "Design a production-ready Django marketplace"
+genius build django-marketplace --output generated --name marketplace
 ```
 
-Run the API health endpoint:
+## API
+
+Use the v2 API:
 
 ```bash
-uvicorn github_ai_genius.api:app --host 0.0.0.0 --port 8080 --reload
+uvicorn github_ai_genius.api_v2:app --host 0.0.0.0 --port 8080 --reload
 ```
 
-Analyze a repository from Python:
+## Container
 
-```python
-import asyncio
-from github_ai_genius.analyzer import RepositoryAnalyzer
-from github_ai_genius.config import get_settings
-from github_ai_genius.github_client import GitHubClient
-from github_ai_genius.models import RepositoryRef
-
-async def main():
-    analyzer = RepositoryAnalyzer(GitHubClient(get_settings()))
-    report = await analyzer.analyze(RepositoryRef.parse('GAN-007/github-ai-genius'))
-    print(report)
-
-asyncio.run(main())
+```bash
+docker compose -f compose.yml up --build
 ```
+
+## Docs
+
+- `docs/ARCHITECTURE.md`
+- `docs/SAFETY.md`
+- `docs/USAGE.md`
+- `docs/GAPS_AND_REBUILD_PLAN.md`
+- `AGENTS.md`
 
 ## Design boundary
 
-The platform is intended for original code generation, authorized repository analysis, secure refactoring, clean-room rebuilds, and defensive engineering. It must respect repository licenses and must not copy proprietary source, protected branding, private assets, or code from projects where reuse is not permitted.
-
-## Remaining build work
-
-The next local pass should add the full agent orchestrator, richer project generators, workspace git operations, Docker, CI, documentation, and integration tests. Some of those writes were blocked by the repository connector during this pass, so they should be added from a local clone.
+The platform is intended for original code generation, authorized repository analysis, secure refactoring, clean-room rebuild planning, and defensive engineering. It must respect repository licenses and must not copy proprietary source, protected branding, private assets, or code from projects where reuse is not permitted.
 
 ## License
 
