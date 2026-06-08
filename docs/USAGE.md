@@ -7,11 +7,6 @@ python -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -e '.[dev]'
-```
-
-Copy the environment template:
-
-```bash
 cp env.example .env
 ```
 
@@ -29,24 +24,38 @@ Analyze a repository:
 genius repo analyze GAN-007/github-ai-genius
 ```
 
+Plan repository work:
+
+```bash
+genius repo plan GAN-007/github-ai-genius "Improve reliability and tests"
+```
+
+Synthesize multiple repositories:
+
+```bash
+genius repo synthesize GAN-007/github-ai-genius GAN-007/GAN-007.github.io
+```
+
 Ask the local model:
 
 ```bash
 genius ask "Design a production-ready Django marketplace"
 ```
 
-Generate the Django marketplace scaffold:
+Generate project scaffolds:
 
 ```bash
 genius build django-marketplace --output generated --name marketplace
+genius build fastapi-service --output generated --name service
+genius build react-vite --output generated --name web-app
 ```
 
 ## API
 
-Run the API:
+Run the v2 API:
 
 ```bash
-uvicorn github_ai_genius.api:app --host 0.0.0.0 --port 8080 --reload
+uvicorn github_ai_genius.api_v2:app --host 0.0.0.0 --port 8080 --reload
 ```
 
 Health:
@@ -63,7 +72,7 @@ curl -X POST http://localhost:8080/repo/analyze \
   -d '{"repository":"GAN-007/github-ai-genius"}'
 ```
 
-Build:
+Build Django marketplace:
 
 ```bash
 curl -X POST http://localhost:8080/build/django-marketplace \
@@ -77,4 +86,12 @@ Plan repository work:
 curl -X POST http://localhost:8080/repo/plan \
   -H 'Content-Type: application/json' \
   -d '{"repository":"GAN-007/github-ai-genius","instruction":"Improve reliability and tests"}'
+```
+
+Synthesize multiple repositories:
+
+```bash
+curl -X POST http://localhost:8080/repo/synthesize \
+  -H 'Content-Type: application/json' \
+  -d '{"repositories":["GAN-007/github-ai-genius","GAN-007/GAN-007.github.io"]}'
 ```
