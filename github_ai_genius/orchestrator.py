@@ -4,11 +4,14 @@ from pathlib import Path
 
 from .analyzer import RepositoryAnalyzer
 from .config import Settings
+from .gap_detector import GapDetector
 from .generator import ProjectGenerator
 from .github_client import GitHubClient
 from .llm import OllamaClient
 from .models import AgentResult, AgentTask, TaskIntent
 from .policy import evaluate_instruction, evaluate_license_for_reuse
+from .quality import QualityGate
+from .rebuilder import RebuildPlanner
 
 
 class GeniusOrchestrator:
@@ -18,6 +21,9 @@ class GeniusOrchestrator:
         self.analyzer = RepositoryAnalyzer(self.github)
         self.llm = OllamaClient(settings)
         self.generator = ProjectGenerator()
+        self.gaps = GapDetector()
+        self.quality = QualityGate()
+        self.rebuilder = RebuildPlanner(self.gaps)
 
     async def execute(self, task: AgentTask) -> AgentResult:
         decision = evaluate_instruction(task.instruction, self.settings.allow_security_exploit_generation)
@@ -35,12 +41,14 @@ class GeniusOrchestrator:
         if task.repository is None:
             return AgentResult(False, 'Repository is required')
         report = await self.analyzer.analyze(task.repository)
-        return AgentResult(True, 'Repository analysis complete', {'analysis': report}, report.findings)
+        gaps = self.gaps.detect(report)
+        return AgentResult(True, 'Repository analysis complete', {'analysis': report, 'gaps': gaps, 'gap_summary': self.gaps.summarize(gaps)}, report.findings)
 
     async def _build(self, task: AgentTask) -> AgentResult:
         if task.target_stack == 'django-marketplace':
             generated = self.generator.create_django_marketplace(task.output_path or Path('generated'))
-            return AgentResult(True, 'Project generated', {'root': str(generated.root), 'files': [str(path) for path in generated.files]})
+            quality = self.quality.inspect_project(generated.root)
+            return AgentResult(True, 'Project generated', {'root': str(generated.root), 'files': [str(path) for path in generated.files], 'quality': quality})
         response = await self.llm.generate(self._build_prompt(task.instruction))
         return AgentResult(True, 'Build plan generated', {'response': response})
 
@@ -49,9 +57,10 @@ class GeniusOrchestrator:
             return AgentResult(False, 'Repository is required')
         report = await self.analyzer.analyze(task.repository)
         license_decision = evaluate_license_for_reuse(report.license_name, self.settings.allow_incompatible_license_copy)
+        plan = self.rebuilder.plan_single(report, task.instruction)
         prompt = self._transform_prompt(task.instruction, report.repository, license_decision.allowed)
         response = await self.llm.generate(prompt)
-        return AgentResult(True, 'Transformation plan generated', {'analysis': report, 'response': response}, [*report.findings, *license_decision.findings])
+        return AgentResult(True, 'Transformation plan generated', {'analysis': report, 'plan': plan, 'response': response}, [*report.findings, *license_decision.findings])
 
     def _build_prompt(self, instruction: str) -> str:
         return 'Create a complete original production-grade software build plan with file tree, validation commands, and rollout notes. Instruction: ' + instruction
