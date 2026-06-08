@@ -12,6 +12,7 @@ from .generator import ProjectGenerator
 from .github_client import GitHubClient
 from .llm import OllamaClient
 from .models import AgentTask, RepositoryRef, TaskIntent
+from .multirepo import MultiRepoSynthesizer
 from .orchestrator import GeniusOrchestrator
 
 app = FastAPI(title='GitHub AI Genius API v2', version='1.0.0')
@@ -19,6 +20,10 @@ app = FastAPI(title='GitHub AI Genius API v2', version='1.0.0')
 
 class RepoRequest(BaseModel):
     repository: str = Field(..., examples=['GAN-007/github-ai-genius'])
+
+
+class MultiRepoRequest(BaseModel):
+    repositories: list[str]
 
 
 class AskRequest(BaseModel):
@@ -42,9 +47,9 @@ def health():
 
 @app.post('/repo/analyze')
 async def analyze_repo(payload: RepoRequest):
-    analyzer = RepositoryAnalyzer(GitHubClient(get_settings()))
-    report = await analyzer.analyze(RepositoryRef.parse(payload.repository))
-    return serialize_analysis(report)
+    task = AgentTask(instruction='analyze repository', intent=TaskIntent.ANALYZE, repository=RepositoryRef.parse(payload.repository))
+    result = await GeniusOrchestrator(get_settings()).execute(task)
+    return {'ok': result.ok, 'summary': result.summary, 'artifacts': clean(result.artifacts), 'findings': clean(result.findings)}
 
 
 @app.post('/repo/plan')
@@ -52,6 +57,16 @@ async def plan_repo(payload: PlanRequest):
     task = AgentTask(instruction=payload.instruction, intent=TaskIntent.TRANSFORM, repository=RepositoryRef.parse(payload.repository))
     result = await GeniusOrchestrator(get_settings()).execute(task)
     return {'ok': result.ok, 'summary': result.summary, 'artifacts': clean(result.artifacts), 'findings': clean(result.findings)}
+
+
+@app.post('/repo/synthesize')
+async def synthesize_repos(payload: MultiRepoRequest):
+    analyzer = RepositoryAnalyzer(GitHubClient(get_settings()))
+    analyses = []
+    for repository in payload.repositories:
+        analyses.append(await analyzer.analyze(RepositoryRef.parse(repository)))
+    synthesis = MultiRepoSynthesizer().synthesize(analyses)
+    return clean(synthesis)
 
 
 @app.post('/ask')
@@ -64,10 +79,6 @@ async def ask(payload: AskRequest):
 def build_marketplace(payload: BuildRequest):
     generated = ProjectGenerator().create_django_marketplace(Path(payload.output), payload.name)
     return {'root': str(generated.root), 'files': [str(path) for path in generated.files]}
-
-
-def serialize_analysis(report):
-    return {'repository': report.repository, 'default_branch': report.default_branch, 'files_scanned': report.files_scanned, 'score': report.score(), 'languages': report.languages, 'frameworks': report.frameworks, 'package_managers': report.package_managers, 'entrypoints': report.entrypoints, 'test_commands': report.test_commands, 'license_name': report.license_name, 'findings': clean(report.findings)}
 
 
 def clean(value):
