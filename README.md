@@ -4,28 +4,22 @@
 
 # GitHub AI Genius Agent
 
-GitHub AI Genius is a local-first AI engineering platform for GitHub repository analysis, safe code transformation, clean-room rebuilds, project generation, and authenticated GitHub automation.
+GitHub AI Genius is being rebuilt from a static blueprint into a local-first GitHub engineering assistant.
 
-It is no longer only a blueprint. This repository now includes an executable Python agent layer with:
+## Current committed foundation
 
-- remote repository analysis through GitHub REST without cloning;
-- local repository transformation through controlled clone, branch, commit, and optional push workflows;
-- FastAPI API server;
-- Typer CLI named `genius`;
-- Ollama local-model integration;
-- SQLite FTS code index foundation;
-- license-aware clean-room policy engine;
-- defensive security scanner for secrets and dangerous patterns;
-- original Django marketplace generator with listings, bookings, payment routing, Docker, and PostgreSQL;
-- CI tests for policy and analysis logic.
+This repository now includes:
 
-## What this agent is designed to do
-
-GitHub AI Genius can act as a full-stack developer, code reviewer, DevOps assistant, defensive cybersecurity engineer, product architect, and project generator. It can inspect public or authorized repositories, understand their structure, identify risks, generate transformation plans, scaffold original applications, and operate against repositories where your GitHub token has permission.
-
-## What it will not do
-
-It will not blindly copy code from repositories with missing, proprietary, or incompatible licenses. It will not generate malware, credential theft, phishing kits, stealth persistence, ransomware, or exfiltration tooling. It can build an original marketplace, booking platform, CRM, fintech system, hospital platform, or other application category, but it must not clone protected branding, proprietary assets, or private code.
+- Python package metadata through `pyproject.toml`;
+- domain models for repositories, files, findings, analysis reports, tasks, and results;
+- runtime settings loaded from environment variables;
+- a PyGithub-backed repository reader;
+- a repository analyzer that detects languages, frameworks, package managers, entrypoints, tests, licenses, secrets, and risky code patterns;
+- a defensive policy engine for license-aware reuse and safe engineering boundaries;
+- an Ollama client for local model execution;
+- a minimal Typer CLI entrypoint;
+- a minimal FastAPI health endpoint;
+- starter tests for policy and analyzer helpers.
 
 ## Install locally
 
@@ -34,79 +28,44 @@ python -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -e '.[dev]'
-cp .env.example .env
 ```
 
-Set your GitHub token in `.env`:
-
-```bash
-GITHUB_TOKEN=your_fine_grained_github_token
-```
-
-Run Ollama locally and pull a coder model:
-
-```bash
-ollama pull qwen2.5-coder:14b
-```
-
-## CLI usage
-
-Check configuration:
+Run the CLI health check:
 
 ```bash
 genius doctor
 ```
 
-Analyze a repository remotely without cloning:
-
-```bash
-genius repo analyze GAN-007/github-ai-genius
-```
-
-Generate an original Django marketplace application:
-
-```bash
-genius build django-marketplace --output ./generated --name marketplace
-```
-
-Ask the agent for a build using the local model:
-
-```bash
-genius ask "Create a production-ready Django marketplace with bookings, M-Pesa-first payments, card, bank, PayPal, admin dashboards, tests, Docker, and CI"
-```
-
-Transform a repository locally and write a transformation report branch:
-
-```bash
-genius repo transform GAN-007/github-ai-genius "Upgrade this into a production AI engineering agent platform" --commit
-```
-
-## API server
+Run the API health endpoint:
 
 ```bash
 uvicorn github_ai_genius.api:app --host 0.0.0.0 --port 8080 --reload
 ```
 
-Endpoints:
+Analyze a repository from Python:
 
-- `GET /health`
-- `POST /repo/analyze`
-- `POST /repo/transform`
-- `POST /build`
+```python
+import asyncio
+from github_ai_genius.analyzer import RepositoryAnalyzer
+from github_ai_genius.config import get_settings
+from github_ai_genius.github_client import GitHubClient
+from github_ai_genius.models import RepositoryRef
 
-## Docker
+async def main():
+    analyzer = RepositoryAnalyzer(GitHubClient(get_settings()))
+    report = await analyzer.analyze(RepositoryRef.parse('GAN-007/github-ai-genius'))
+    print(report)
 
-```bash
-docker compose up --build
+asyncio.run(main())
 ```
 
-## Architecture
+## Design boundary
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+The platform is intended for original code generation, authorized repository analysis, secure refactoring, clean-room rebuilds, and defensive engineering. It must respect repository licenses and must not copy proprietary source, protected branding, private assets, or code from projects where reuse is not permitted.
 
-## Safety and licensing
+## Remaining build work
 
-See [`docs/SAFETY.md`](docs/SAFETY.md).
+The next local pass should add the full agent orchestrator, richer project generators, workspace git operations, Docker, CI, documentation, and integration tests. Some of those writes were blocked by the repository connector during this pass, so they should be added from a local clone.
 
 ## License
 
