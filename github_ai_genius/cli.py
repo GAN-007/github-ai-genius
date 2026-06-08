@@ -7,6 +7,7 @@ import typer
 from rich.console import Console
 
 from .analyzer import RepositoryAnalyzer
+from .blueprints import StackBlueprints
 from .config import get_settings
 from .generator import ProjectGenerator
 from .github_client import GitHubClient
@@ -89,6 +90,22 @@ def build_marketplace(output: Path = Path('generated'), name: str = 'marketplace
     console.print('quality_passed=' + str(report.passed))
     for file_path in generated.files:
         console.print(str(file_path))
+
+
+@build_app.command('fastapi-service')
+def build_fastapi(output: Path = Path('generated'), name: str = 'service') -> None:
+    generated = StackBlueprints().create_fastapi_service(output, name)
+    report = QualityGate().inspect_project(generated.root)
+    console.print('generated=' + str(generated.root))
+    console.print('quality_passed=' + str(report.passed))
+
+
+@build_app.command('react-vite')
+def build_react(output: Path = Path('generated'), name: str = 'web-app') -> None:
+    generated = StackBlueprints().create_react_vite_app(output, name)
+    report = QualityGate().inspect_project(generated.root)
+    console.print('generated=' + str(generated.root))
+    console.print('quality_passed=' + str(report.passed))
 
 
 if __name__ == '__main__':
