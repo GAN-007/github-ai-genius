@@ -2,6 +2,20 @@
 node_modules/
 dist/
 build/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+*.egg-info/
+.genius/
+generated/
+
+# Local environment
 .env
 .DS_Store
 
