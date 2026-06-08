@@ -12,6 +12,9 @@ from .generator import ProjectGenerator
 from .github_client import GitHubClient
 from .llm import OllamaClient
 from .models import RepositoryRef
+from .multirepo import MultiRepoSynthesizer
+from .quality import QualityGate
+from .rebuilder import RebuildPlanner
 
 app = typer.Typer(help='GitHub AI Genius command line interface')
 repo_app = typer.Typer(help='Repository commands')
@@ -42,6 +45,34 @@ def repo_analyze(repository: str) -> None:
     asyncio.run(run())
 
 
+@repo_app.command('plan')
+def repo_plan(repository: str, goal: str) -> None:
+    async def run() -> None:
+        analyzer = RepositoryAnalyzer(GitHubClient(get_settings()))
+        report = await analyzer.analyze(RepositoryRef.parse(repository))
+        plan = RebuildPlanner().plan_single(report, goal)
+        console.print(plan.title)
+        for step in plan.steps:
+            console.print(str(step.order) + '. ' + step.title)
+        if plan.blockers:
+            console.print('blockers=' + ', '.join(plan.blockers))
+    asyncio.run(run())
+
+
+@repo_app.command('synthesize')
+def repo_synthesize(repositories: list[str]) -> None:
+    async def run() -> None:
+        analyzer = RepositoryAnalyzer(GitHubClient(get_settings()))
+        reports = []
+        for repository in repositories:
+            reports.append(await analyzer.analyze(RepositoryRef.parse(repository)))
+        synthesis = MultiRepoSynthesizer().synthesize(reports)
+        console.print('frameworks=' + ', '.join(synthesis.combined_frameworks))
+        for step in synthesis.integration_strategy:
+            console.print('- ' + step)
+    asyncio.run(run())
+
+
 @app.command('ask')
 def ask(prompt: str) -> None:
     async def run() -> None:
@@ -53,7 +84,9 @@ def ask(prompt: str) -> None:
 @build_app.command('django-marketplace')
 def build_marketplace(output: Path = Path('generated'), name: str = 'marketplace') -> None:
     generated = ProjectGenerator().create_django_marketplace(output, name)
+    report = QualityGate().inspect_project(generated.root)
     console.print('generated=' + str(generated.root))
+    console.print('quality_passed=' + str(report.passed))
     for file_path in generated.files:
         console.print(str(file_path))
 
