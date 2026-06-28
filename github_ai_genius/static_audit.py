@@ -33,6 +33,8 @@ class StaticProjectAuditor:
             if not path.is_file():
                 continue
             relative = path.relative_to(root).as_posix()
+            if path.name == '__init__.py' and path.stat().st_size == 0:
+                continue
             if path.suffix in self.source_suffixes and path.stat().st_size == 0:
                 findings.append(StaticAuditFinding(relative, 'empty source file', 'high'))
                 continue
