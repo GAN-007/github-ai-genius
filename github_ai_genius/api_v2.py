@@ -14,35 +14,36 @@ from .llm import OllamaClient
 from .models import AgentTask, RepositoryRef, TaskIntent
 from .multirepo import MultiRepoSynthesizer
 from .orchestrator import GeniusOrchestrator
+from .readiness_score import ScoreEngine
 
-app = FastAPI(title='GitHub AI Genius API v2', version='1.0.0')
+app = FastAPI(title='GitHub AI Genius API v2', version='1.1.0')
 
 
 class RepoRequest(BaseModel):
-    repository: str = Field(..., examples=['GAN-007/github-ai-genius'])
+    repository: str = Field(..., examples=['GAN-007/github-ai-genius'], min_length=3, max_length=300)
 
 
 class MultiRepoRequest(BaseModel):
-    repositories: list[str]
+    repositories: list[str] = Field(..., min_length=1, max_length=20)
 
 
 class AskRequest(BaseModel):
-    prompt: str
+    prompt: str = Field(..., min_length=1, max_length=40000)
 
 
 class BuildRequest(BaseModel):
-    name: str = 'marketplace'
-    output: str = 'generated'
+    name: str = Field(default='marketplace', min_length=2, max_length=80)
+    output: str = Field(default='generated', min_length=1, max_length=240)
 
 
 class PlanRequest(BaseModel):
-    repository: str
-    instruction: str
+    repository: str = Field(..., min_length=3, max_length=300)
+    instruction: str = Field(..., min_length=3, max_length=20000)
 
 
 @app.get('/health')
 def health():
-    return {'ok': True, 'service': 'github-ai-genius-api-v2'}
+    return {'ok': True, 'service': 'github-ai-genius-api-v2', 'version': '1.1.0'}
 
 
 @app.post('/repo/analyze')
@@ -50,6 +51,13 @@ async def analyze_repo(payload: RepoRequest):
     task = AgentTask(instruction='analyze repository', intent=TaskIntent.ANALYZE, repository=RepositoryRef.parse(payload.repository))
     result = await GeniusOrchestrator(get_settings()).execute(task)
     return {'ok': result.ok, 'summary': result.summary, 'artifacts': clean(result.artifacts), 'findings': clean(result.findings)}
+
+
+@app.post('/repo/score')
+async def score_repo(payload: RepoRequest):
+    analyzer = RepositoryAnalyzer(GitHubClient(get_settings()))
+    report = await analyzer.analyze(RepositoryRef.parse(payload.repository))
+    return clean(ScoreEngine().evaluate(report))
 
 
 @app.post('/repo/plan')
