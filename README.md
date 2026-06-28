@@ -11,13 +11,15 @@ GitHub AI Genius is a local-first GitHub engineering assistant for repository an
 This repository now includes:
 
 - Python package metadata through `pyproject.toml`;
+- active GitHub Actions CI under `.github/workflows/ci.yml`;
+- an explicit MIT `LICENSE` file;
 - domain models for repositories, files, findings, analysis reports, tasks, and results;
 - runtime settings loaded from environment variables;
 - a PyGithub-backed repository reader;
 - repository analysis for languages, frameworks, package managers, entrypoints, test commands, licenses, and risky patterns;
 - a defensive policy engine for license-aware reuse and safe engineering boundaries;
 - Ollama local model integration;
-- Typer CLI commands for health checks, repository analysis, rebuild planning, multi-repository synthesis, local prompts, and Django marketplace generation;
+- Typer CLI commands for health checks, repository analysis, rebuild planning, multi-repository synthesis, local prompts, and Django/FastAPI/React generation;
 - FastAPI endpoints through `github_ai_genius.api_v2:app` for analysis, planning, synthesis, prompts, and generation;
 - an orchestration layer for analyze, build, and plan tasks;
 - structured gap detection through `GapDetector`;
@@ -28,7 +30,7 @@ This repository now includes:
 - an original Django marketplace generator with accounts, listings, bookings, payments, settings, apps, and tests;
 - container support through `Containerfile` and `compose.yml`;
 - documentation for architecture, safety, usage, gaps, and agent operation;
-- tests for policy, analyzer helpers, generator, indexer, API health, gap detection, multi-repo synthesis, rebuild planning, and orchestrator.
+- tests for policy, analyzer helpers, generator, indexer, API health, gap detection, multi-repo synthesis, rebuild planning, container entrypoint, licensing, and orchestrator.
 
 ## Install locally
 
@@ -49,6 +51,8 @@ genius repo plan GAN-007/github-ai-genius "Improve reliability and production re
 genius repo synthesize GAN-007/github-ai-genius GAN-007/GAN-007.github.io
 genius ask "Design a production-ready Django marketplace"
 genius build django-marketplace --output generated --name marketplace
+genius build fastapi-service --output generated --name service
+genius build react-vite --output generated --name web-app
 ```
 
 ## API
@@ -64,6 +68,18 @@ uvicorn github_ai_genius.api_v2:app --host 0.0.0.0 --port 8080 --reload
 ```bash
 docker compose -f compose.yml up --build
 ```
+
+The container entrypoint serves `github_ai_genius.api_v2:app`, matching the documented API path.
+
+## CI
+
+```bash
+pytest
+ruff check github_ai_genius tests
+mypy github_ai_genius
+```
+
+GitHub Actions runs these checks on Python 3.11 and 3.12.
 
 ## Docs
 
@@ -83,4 +99,4 @@ This is now a stronger engineering platform foundation, not a universal any-stac
 
 ## License
 
-MIT
+MIT. See `LICENSE`.
