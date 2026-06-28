@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from .static_audit import StaticProjectAuditor
+
 
 @dataclass(slots=True)
 class QualityCheck:
@@ -29,6 +31,7 @@ class QualityGate:
             self._has_dependency_manifest(root),
             self._has_runtime_entrypoint(root),
             self._has_no_empty_source_files(root),
+            self._passes_static_audit(root),
         ]
         return QualityReport(root, checks)
 
@@ -52,3 +55,8 @@ class QualityGate:
         source_suffixes = {'.py', '.ts', '.tsx', '.js', '.jsx', '.go', '.rs'}
         empty = [str(path.relative_to(root)) for path in root.rglob('*') if path.is_file() and path.suffix in source_suffixes and path.stat().st_size == 0]
         return QualityCheck('no_empty_source_files', not empty, 'Empty source files: ' + ', '.join(empty[:20]) if empty else 'No empty source files found.')
+
+    def _passes_static_audit(self, root: Path) -> QualityCheck:
+        report = StaticProjectAuditor().inspect(root)
+        details = 'Static audit passed' if report.passed else '; '.join(item.path + ': ' + item.reason for item in report.findings[:20])
+        return QualityCheck('static_audit', report.passed, details)
