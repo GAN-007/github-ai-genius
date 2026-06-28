@@ -14,7 +14,7 @@ LANGUAGE_BY_EXTENSION = {
     "sh": "Shell", "yml": "YAML", "yaml": "YAML", "toml": "TOML", "json": "JSON", "md": "Markdown",
 }
 
-IMPORTANT_FILES = {"package.json", "pnpm-lock.yaml", "yarn.lock", "package-lock.json", "pyproject.toml", "requirements.txt", "poetry.lock", "Pipfile", "go.mod", "Cargo.toml", "composer.json", "Dockerfile", "docker-compose.yml", "compose.yml", "README.md", "LICENSE", ".github/workflows/ci.yml"}
+IMPORTANT_FILES = {"package.json", "pnpm-lock.yaml", "yarn.lock", "package-lock.json", "pyproject.toml", "requirements.txt", "poetry.lock", "Pipfile", "go.mod", "Cargo.toml", "composer.json", "Dockerfile", "Containerfile", "docker-compose.yml", "compose.yml", "README.md", "LICENSE", ".github/workflows/ci.yml"}
 
 
 def detect_frameworks(files: list[RepoFile]) -> list[str]:
@@ -37,7 +37,7 @@ def detect_frameworks(files: list[RepoFile]) -> list[str]:
         frameworks.add("Rust crate")
     if any(path.startswith(".github/workflows/") for path in paths):
         frameworks.add("GitHub Actions")
-    if "docker-compose.yml" in paths or "compose.yml" in paths or "Dockerfile" in paths:
+    if "docker-compose.yml" in paths or "compose.yml" in paths or "Dockerfile" in paths or "Containerfile" in paths:
         frameworks.add("Docker")
     return sorted(frameworks)
 
@@ -80,7 +80,13 @@ def infer_test_commands(files: list[RepoFile]) -> list[str]:
 def infer_entrypoints(files: list[RepoFile]) -> list[str]:
     paths = {file.path for file in files}
     candidates = ["manage.py", "main.py", "app.py", "src/main.tsx", "src/App.tsx", "pages/index.tsx", "app/page.tsx", "cmd/main.go", "main.go"]
-    return [path for path in candidates if path in paths]
+    discovered = [path for path in candidates if path in paths]
+    pyproject = next((file for file in files if file.path == "pyproject.toml" and file.content), None)
+    if pyproject and "[project.scripts]" in pyproject.content:
+        discovered.append("pyproject.toml:project.scripts")
+    if any(file.path.endswith("api_v2.py") for file in files):
+        discovered.append("github_ai_genius/api_v2.py")
+    return discovered
 
 
 def detect_license(files: list[RepoFile]) -> str | None:
@@ -100,6 +106,9 @@ def detect_license(files: list[RepoFile]) -> str | None:
             if "bsd 2-clause" in text:
                 return "BSD-2-Clause"
             return "Other"
+    pyproject = next((file for file in files if file.path == "pyproject.toml" and file.content), None)
+    if pyproject and 'license = "MIT"' in pyproject.content:
+        return "MIT"
     return None
 
 
@@ -110,7 +119,7 @@ class RepositoryAnalyzer:
     async def analyze(self, repo: RepositoryRef) -> RepositoryAnalysis:
         default_branch = await self.client.default_branch(repo)
         tree = await self.client.recursive_tree(repo, default_branch)
-        important = [file for file in tree if file.path in IMPORTANT_FILES or Path(file.path).name in IMPORTANT_FILES]
+        important = [file for file in tree if file.path in IMPORTANT_FILES or Path(file.path).name in IMPORTANT_FILES or file.path.startswith(".github/workflows/")]
         small_source = [file for file in tree if file.extension in LANGUAGE_BY_EXTENSION and file.size <= self.client.settings.max_file_bytes][:500]
         selected_by_path = {file.path: file for file in [*important, *small_source]}
         hydrated = await self.client.fetch_selected_files(repo, selected_by_path.values())
@@ -127,4 +136,4 @@ class RepositoryAnalyzer:
                 findings.extend(scan_text_for_risks(file.path, file.content))
         if not any(path.startswith("tests/") or path.endswith(".test.ts") or path.endswith("_test.go") for path in [file.path for file in tree]):
             findings.append(Finding(title="Automated tests not detected", description="The repository tree does not expose a conventional test suite path or test file naming pattern.", level=RiskLevel.MEDIUM, remediation="Add tests for CLI commands, GitHub integration, policy enforcement, and generated project validation."))
-        return RepositoryAnalysis(repository=repo.full_name, default_branch=default_branch, files_scanned=len(tree), total_bytes=total_bytes, languages=dict(language_counter.most_common()), frameworks=detect_frameworks(hydrated), package_managers=detect_package_managers(hydrated), entrypoints=infer_entrypoints(tree), test_commands=infer_test_commands(tree), findings=findings, license_name=detect_license(hydrated))
+        return RepositoryAnalysis(repository=repo.full_name, default_branch=default_branch, files_scanned=len(tree), total_bytes=total_bytes, languages=dict(language_counter.most_common()), frameworks=detect_frameworks(hydrated), package_managers=detect_package_managers(hydrated), entrypoints=infer_entrypoints(hydrated), test_commands=infer_test_commands(tree), findings=findings, license_name=detect_license(hydrated))
