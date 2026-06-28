@@ -1,0 +1,17 @@
+from __future__ import annotations
+
+
+def django_marketplace_extra_files() -> dict[str, str]:
+    return {
+        'accounts/admin.py': "from django.contrib import admin\nfrom .models import UserProfile\nadmin.site.register(UserProfile)\n",
+        'listings/admin.py': "from django.contrib import admin\nfrom .models import Listing\nadmin.site.register(Listing)\n",
+        'bookings/admin.py': "from django.contrib import admin\nfrom .models import Booking\nadmin.site.register(Booking)\n",
+        'payments/admin.py': "from django.contrib import admin\nfrom .models import PaymentTransaction\nadmin.site.register(PaymentTransaction)\n",
+        'accounts/serializers.py': "from rest_framework import serializers\nfrom .models import UserProfile\nclass UserProfileSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = UserProfile\n        fields = ['id', 'user', 'role', 'phone_number', 'verified_at', 'created_at']\n        read_only_fields = ['id', 'created_at']\n",
+        'listings/serializers.py': "from rest_framework import serializers\nfrom .models import Listing\nclass ListingSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = Listing\n        fields = ['id', 'owner', 'title', 'slug', 'description', 'city', 'country', 'nightly_price', 'max_guests', 'status', 'created_at']\n        read_only_fields = ['id', 'created_at']\n",
+        'bookings/serializers.py': "from rest_framework import serializers\nfrom .models import Booking\nclass BookingSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = Booking\n        fields = ['id', 'guest', 'listing', 'check_in', 'check_out', 'guests', 'status', 'total', 'created_at']\n        read_only_fields = ['id', 'created_at']\n",
+        'payments/serializers.py': "from rest_framework import serializers\nfrom .models import PaymentTransaction\nclass PaymentTransactionSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = PaymentTransaction\n        fields = ['id', 'booking', 'method', 'status', 'provider_reference', 'amount', 'currency', 'created_at']\n        read_only_fields = ['id', 'created_at']\n",
+        'listings/views.py': "from rest_framework import permissions, viewsets\nfrom .models import Listing\nfrom .serializers import ListingSerializer\nclass ListingViewSet(viewsets.ModelViewSet):\n    queryset = Listing.objects.all().order_by('-created_at')\n    serializer_class = ListingSerializer\n    permission_classes = [permissions.IsAuthenticatedOrReadOnly]\n",
+        'bookings/views.py': "from rest_framework import permissions, viewsets\nfrom .models import Booking\nfrom .serializers import BookingSerializer\nclass BookingViewSet(viewsets.ModelViewSet):\n    serializer_class = BookingSerializer\n    permission_classes = [permissions.IsAuthenticated]\n    def get_queryset(self):\n        return Booking.objects.filter(guest=self.request.user).order_by('-created_at')\n",
+        'payments/views.py': "from rest_framework import permissions, viewsets\nfrom .models import PaymentTransaction\nfrom .serializers import PaymentTransactionSerializer\nclass PaymentTransactionViewSet(viewsets.ReadOnlyModelViewSet):\n    serializer_class = PaymentTransactionSerializer\n    permission_classes = [permissions.IsAuthenticated]\n    def get_queryset(self):\n        return PaymentTransaction.objects.filter(booking__guest=self.request.user).order_by('-created_at')\n",
+    }
