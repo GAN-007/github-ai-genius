@@ -5,7 +5,6 @@ from dataclasses import dataclass
 
 from .models import Finding, RiskLevel
 
-
 PERMISSIVE_LICENSES = {"MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unlicense", "CC0-1.0"}
 COPYLEFT_LICENSES = {"GPL-2.0", "GPL-3.0", "AGPL-3.0", "LGPL-2.1", "LGPL-3.0", "MPL-2.0"}
 
@@ -21,6 +20,15 @@ DANGEROUS_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("Destructive filesystem command", re.compile(r"rm\s+-rf\s+(/|\$HOME|~|\.\.)")),
 )
 
+BLOCKED_INSTRUCTION_MARKERS = (
+    "credential abuse",
+    "harmful automation",
+    "bypass review",
+    "disable safeguards",
+    "unreviewed host control",
+)
+
+
 @dataclass(slots=True)
 class PolicyDecision:
     allowed: bool
@@ -30,15 +38,14 @@ class PolicyDecision:
 
 def evaluate_instruction(instruction: str, allow_exploit_generation: bool = False) -> PolicyDecision:
     text = instruction.lower()
-    blocked_markers = ["credential abuse", "unauthorized access", "harmful automation"]
-    if not allow_exploit_generation and any(marker in text for marker in blocked_markers):
+    if not allow_exploit_generation and any(marker in text for marker in BLOCKED_INSTRUCTION_MARKERS):
         finding = Finding(
-            title="Unsafe cybersecurity request blocked",
-            description="The request is outside defensive engineering boundaries.",
+            title="Unsafe engineering boundary blocked",
+            description="The request is outside reviewed defensive engineering boundaries.",
             level=RiskLevel.CRITICAL,
-            remediation="Use the agent for defensive scanning, secure coding, patching, hardening, and authorized testing only.",
+            remediation="Use the agent for repository analysis, secure coding, patching, hardening, validation, and authorized review only.",
         )
-        return PolicyDecision(False, "unsafe_security_intent", [finding])
+        return PolicyDecision(False, "unsafe_instruction", [finding])
     return PolicyDecision(True, "allowed", [])
 
 
