@@ -10,6 +10,16 @@ pip install -e '.[dev]'
 cp env.example .env
 ```
 
+## Validate the repository
+
+```bash
+pytest
+ruff check github_ai_genius tests
+mypy github_ai_genius
+```
+
+The active GitHub Actions workflow runs those checks on Python 3.11 and 3.12.
+
 ## CLI
 
 Health check:
@@ -95,3 +105,11 @@ curl -X POST http://localhost:8080/repo/synthesize \
   -H 'Content-Type: application/json' \
   -d '{"repositories":["GAN-007/github-ai-genius","GAN-007/GAN-007.github.io"]}'
 ```
+
+## Container
+
+```bash
+docker compose -f compose.yml up --build
+```
+
+The container serves `github_ai_genius.api_v2:app`, matching the API commands above.
