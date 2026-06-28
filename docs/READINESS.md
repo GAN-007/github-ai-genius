@@ -1,10 +1,10 @@
 # Readiness Calibration
 
-Current calibrated state after the hardening pass:
+Current calibrated state after the third hardening pass:
 
-- Foundation readiness: 72%.
-- Production readiness: 44%.
+- Foundation readiness: 84%.
+- Production readiness: 63%.
 
-The score is based on active CI, package metadata, explicit license, container/API alignment, repository analyzer depth, policy boundaries, generated project quality, API hardening, local execution safety, generator completeness, tests, documentation, and release operations.
+Improvements included analyzer signal detection, real workspace clone and commit support, generated Django admin and API assets, stronger quality gates, release validation metadata, API scoring support, and persistent project state.
 
-The project cannot honestly be called 95% production-ready until execution validation, publishing review flow, API request controls, generator depth, and end-to-end tests are implemented and passing in CI.
+Remaining work before 95%: fully verified green CI, request control middleware, release-result ingestion, deeper generated migrations, provider integrations, and end-to-end workflow tests.
