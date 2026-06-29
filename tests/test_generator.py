@@ -14,6 +14,7 @@ def test_django_marketplace_generator_writes_expected_files(tmp_path: Path):
     assert 'listings/models.py' in paths
     assert 'bookings/models.py' in paths
     assert 'payments/models.py' in paths
+    assert 'payments/external_services.py' in paths
     assert 'accounts/admin.py' in paths
     assert 'listings/serializers.py' in paths
     assert 'bookings/views.py' in paths
