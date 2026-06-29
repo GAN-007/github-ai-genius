@@ -1,0 +1,5 @@
+from __future__ import annotations
+
+
+def external_service_client_template() -> str:
+    return "from dataclasses import dataclass\nfrom decimal import Decimal\nimport httpx\n@dataclass(slots=True)\nclass ServiceResponse:\n    ok: bool\n    reference: str\n    status: str\n    payload: dict\nclass ExternalServiceClient:\n    def __init__(self, base_url: str, token: str, timeout: float = 30.0):\n        self.base_url = base_url.rstrip('/')\n        self.token = token\n        self.timeout = timeout\n    def submit_amount_request(self, path: str, amount: Decimal, currency: str, reference: str) -> ServiceResponse:\n        payload = {'amount': str(amount), 'currency': currency, 'reference': reference}\n        headers = {'Authorization': 'Bearer ' + self.token} if self.token else {}\n        response = httpx.post(self.base_url + path, json=payload, headers=headers, timeout=self.timeout)\n        data = response.json() if response.content else {}\n        return ServiceResponse(response.is_success, str(data.get('reference', reference)), str(data.get('status', 'pending')), data)\n"
