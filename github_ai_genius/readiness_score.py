@@ -20,7 +20,7 @@ class ScoreReport:
 
 
 class ScoreEngine:
-    def evaluate(self, analysis: RepositoryAnalysis) -> ScoreReport:
+    def evaluate(self, analysis: RepositoryAnalysis, release_passed: bool = False, release_seen: bool = False) -> ScoreReport:
         items = [
             ScoreItem("dependency_manifest", bool(analysis.package_managers), 10),
             ScoreItem("runtime_entrypoint", bool(analysis.entrypoints), 10),
@@ -30,8 +30,10 @@ class ScoreEngine:
             ScoreItem("docs", True, 8),
             ScoreItem("modular", analysis.files_scanned > 5 and bool(analysis.frameworks), 8),
             ScoreItem("analysis_score", analysis.score() >= 90, 14),
+            ScoreItem("release_results_present", release_seen, 8),
+            ScoreItem("release_results_green", release_passed, 20),
         ]
-        foundation = self._score(items[:7])
+        foundation = self._score(items[:8])
         production = self._score(items)
         return ScoreReport(foundation, production, items)
 
