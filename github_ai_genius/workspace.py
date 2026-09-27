@@ -54,7 +54,7 @@ class Workspace:
             git_repo.git.checkout("-B", branch_name)
             return CommandResult(["git", "checkout", "-B", branch_name], repo_path, 0, branch_name, "")
         except GitCommandError as exc:
-            return CommandResult(["git", "checkout", "-B", branch_name], repo_path, exc.status or 1, exc.stdout or "", exc.stderr or str(exc))
+            return CommandResult(["git", "checkout", "-B", branch_name], repo_path, exc.status if isinstance(exc.status, int) else 1, exc.stdout or "", exc.stderr or str(exc))
 
     def commit_all(self, repo_path: Path, message: str) -> CommandResult:
         if not message.strip():
@@ -67,7 +67,7 @@ class Workspace:
             commit = git_repo.index.commit(message.strip())
             return CommandResult(["git", "commit"], repo_path, 0, commit.hexsha, "")
         except GitCommandError as exc:
-            return CommandResult(["git", "commit"], repo_path, exc.status or 1, exc.stdout or "", exc.stderr or str(exc))
+            return CommandResult(["git", "commit"], repo_path, exc.status if isinstance(exc.status, int) else 1, exc.stdout or "", exc.stderr or str(exc))
 
     def push(self, repo_path: Path, branch_name: str) -> CommandResult:
         raise WorkspaceError("Publishing is intentionally completed with reviewed local credentials outside this workspace helper.")
