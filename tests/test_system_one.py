@@ -1,16 +1,15 @@
 from __future__ import annotations
 
+import asyncio
 import json
 
 import httpx
-import pytest
 
 from github_ai_genius.config import Settings
 from github_ai_genius.system_one import GeniusDecisionPlane
 
 
-@pytest.mark.asyncio
-async def test_system_one_disabled_does_not_call_provider():
+def test_system_one_disabled_does_not_call_provider():
     async def handler(request: httpx.Request) -> httpx.Response:
         raise AssertionError("provider must not be called")
 
@@ -21,11 +20,10 @@ async def test_system_one_disabled_does_not_call_provider():
         ),
         transport=httpx.MockTransport(handler),
     )
-    assert await plane.classify("Analyze owner/repo", explicit_intent="analyze") is None
+    assert asyncio.run(plane.classify("Analyze owner/repo", explicit_intent="analyze")) is None
 
 
-@pytest.mark.asyncio
-async def test_system_one_returns_advisory_task_signals():
+def test_system_one_returns_advisory_task_signals():
     async def handler(request: httpx.Request) -> httpx.Response:
         payload = json.loads(request.content.decode())
         assert payload["state"]["explicit_intent"] == "transform"
@@ -55,17 +53,18 @@ async def test_system_one_returns_advisory_task_signals():
         ),
         transport=httpx.MockTransport(handler),
     )
-    result = await plane.classify(
-        "Refactor the repository without breaking existing features",
-        explicit_intent="transform",
+    result = asyncio.run(
+        plane.classify(
+            "Refactor the repository without breaking existing features",
+            explicit_intent="transform",
+        )
     )
     assert result is not None
     assert result["advisory_only"] is True
     assert result["answers"]["domain"]["choice"] == "implementation"
 
 
-@pytest.mark.asyncio
-async def test_system_one_provider_failure_fails_open():
+def test_system_one_provider_failure_fails_open():
     async def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(503, json={"error": "down"})
 
@@ -76,4 +75,4 @@ async def test_system_one_provider_failure_fails_open():
         ),
         transport=httpx.MockTransport(handler),
     )
-    assert await plane.classify("Analyze repository", explicit_intent="analyze") is None
+    assert asyncio.run(plane.classify("Analyze repository", explicit_intent="analyze")) is None
