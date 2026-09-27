@@ -110,7 +110,7 @@ class GeniusDecisionPlane:
                 body = response.json()
             answers = body.get("answers")
             if not isinstance(answers, dict):
-                raise ValueError("System-One response missing answers")
+                raise TypeError("System-One response missing answers")
             return {
                 "provider": "laya",
                 "mode": self.settings.system_one_mode,
