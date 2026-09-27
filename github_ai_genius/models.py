@@ -30,7 +30,7 @@ class RepositoryRef:
     branch: str | None = None
 
     @classmethod
-    def parse(cls, value: str) -> "RepositoryRef":
+    def parse(cls, value: str) -> RepositoryRef:
         cleaned = value.strip().removeprefix("https://github.com/").strip("/")
         if "/" not in cleaned:
             raise ValueError("Repository must be in owner/name or https://github.com/owner/name form")
