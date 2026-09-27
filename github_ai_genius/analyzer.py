@@ -134,6 +134,6 @@ class RepositoryAnalyzer:
         for file in hydrated:
             if file.content:
                 findings.extend(scan_text_for_risks(file.path, file.content))
-        if not any(path.startswith("tests/") or path.endswith(".test.ts") or path.endswith("_test.go") for path in [file.path for file in tree]):
+        if not any(path.startswith("tests/") or path.endswith((".test.ts", "_test.go")) for path in [file.path for file in tree]):
             findings.append(Finding(title="Automated tests not detected", description="The repository tree does not expose a conventional test suite path or test file naming pattern.", level=RiskLevel.MEDIUM, remediation="Add tests for CLI commands, GitHub integration, policy enforcement, and generated project validation."))
         return RepositoryAnalysis(repository=repo.full_name, default_branch=default_branch, files_scanned=len(tree), total_bytes=total_bytes, languages=dict(language_counter.most_common()), frameworks=detect_frameworks(hydrated), package_managers=detect_package_managers(hydrated), entrypoints=infer_entrypoints(hydrated), test_commands=infer_test_commands(tree), findings=findings, license_name=detect_license(hydrated))
