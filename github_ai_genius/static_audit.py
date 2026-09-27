@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import ClassVar
 
 
 @dataclass(slots=True)
@@ -22,8 +23,8 @@ class StaticAuditReport:
 
 
 class StaticProjectAuditor:
-    source_suffixes = {'.py', '.ts', '.tsx', '.js', '.jsx', '.go', '.rs'}
-    weak_markers = ('TODO', 'FIXME', 'example only', 'not implemented', 'pass  #')
+    source_suffixes: ClassVar[set[str]] = {'.py', '.ts', '.tsx', '.js', '.jsx', '.go', '.rs'}
+    weak_markers: ClassVar[tuple[str, ...]] = ('TODO', 'FIXME', 'example only', 'not implemented', 'pass  #')
 
     def inspect(self, root: Path) -> StaticAuditReport:
         findings: list[StaticAuditFinding] = []
