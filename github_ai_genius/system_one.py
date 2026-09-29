@@ -108,6 +108,8 @@ class GeniusDecisionPlane:
                 )
                 response.raise_for_status()
                 body = response.json()
+            if not isinstance(body, dict):
+                raise TypeError("System-One response must be a JSON object")
             answers = body.get("answers")
             if not isinstance(answers, dict):
                 raise TypeError("System-One response missing answers")
