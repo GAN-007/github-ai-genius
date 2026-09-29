@@ -76,3 +76,17 @@ def test_system_one_provider_failure_fails_open():
         transport=httpx.MockTransport(handler),
     )
     assert asyncio.run(plane.classify("Analyze repository", explicit_intent="analyze")) is None
+
+
+def test_system_one_non_object_json_fails_open():
+    async def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=["not", "an", "object"])
+
+    plane = GeniusDecisionPlane(
+        Settings(
+            GENIUS_SYSTEM_ONE_MODE="advisory",
+            GENIUS_SYSTEM_ONE_BASE_URL="http://laya.test:8000",
+        ),
+        transport=httpx.MockTransport(handler),
+    )
+    assert asyncio.run(plane.classify("Analyze repository", explicit_intent="analyze")) is None
