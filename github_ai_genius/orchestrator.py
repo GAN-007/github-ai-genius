@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
 from .analyzer import RepositoryAnalyzer
@@ -35,9 +36,14 @@ class GeniusOrchestrator:
         if not decision.allowed:
             return AgentResult(False, 'Task blocked by policy', findings=decision.findings)
 
-        system_one = await self.system_one.classify(
-            task.instruction,
-            explicit_intent=task.intent.value,
+        # System-One is advisory and must not delay or override the explicit
+        # task intent. Run it concurrently with the incumbent execution path,
+        # after the existing policy gate has allowed the task.
+        system_one_task = asyncio.create_task(
+            self.system_one.classify(
+                task.instruction,
+                explicit_intent=task.intent.value,
+            )
         )
 
         if task.intent == TaskIntent.ANALYZE:
@@ -49,6 +55,7 @@ class GeniusOrchestrator:
         else:
             result = AgentResult(False, 'Unsupported task intent')
 
+        system_one = await system_one_task
         if system_one is not None:
             result.artifacts.setdefault('system_one', system_one)
         return result
