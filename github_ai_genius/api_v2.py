@@ -91,7 +91,7 @@ def build_marketplace(payload: BuildRequest):
 
 def clean(value):
     if is_dataclass(value) and not isinstance(value, type):
-        return asdict(value)  # type: ignore[arg-type]
+        return asdict(value)
     if isinstance(value, list):
         return [clean(item) for item in value]
     if isinstance(value, dict):
