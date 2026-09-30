@@ -47,8 +47,12 @@ class QualityGate:
         return QualityCheck('dependency_manifest', any((root / item).exists() for item in manifests), 'A dependency manifest must exist.')
 
     def _has_runtime_entrypoint(self, root: Path) -> QualityCheck:
-        candidates = ['manage.py', 'main.py', 'app.py', 'package.json', 'cmd/main.go']
-        return QualityCheck('runtime_entrypoint', any((root / item).exists() for item in candidates), 'A runtime entrypoint must exist.')
+        candidates = ['manage.py', 'main.py', 'app.py', 'app/main.py', 'package.json', 'cmd/main.go']
+        return QualityCheck(
+            'runtime_entrypoint',
+            any((root / item).exists() for item in candidates),
+            'A runtime entrypoint must exist.',
+        )
 
     def _has_no_empty_source_files(self, root: Path) -> QualityCheck:
         suffixes = {'.py', '.ts', '.tsx', '.js', '.jsx', '.go', '.rs'}

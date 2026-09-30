@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from github import Github
 
@@ -57,6 +57,6 @@ class GitHubClient:
             try:
                 text = await self.fetch_text_file(repo, file.path)
                 enriched.append(RepoFile(path=file.path, sha=file.sha, size=file.size, type=file.type, content=text))
-            except Exception:
+            except Exception:  # noqa: BLE001 -- enrichment is intentionally best-effort
                 enriched.append(file)
         return enriched

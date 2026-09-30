@@ -66,7 +66,7 @@ def infer_test_commands(files: list[RepoFile]) -> list[str]:
     paths = {file.path for file in files}
     commands = []
     package_json = next((file for file in files if file.path.endswith("package.json") and file.content), None)
-    if package_json and '"test"' in package_json.content:
+    if package_json and '"test"' in (package_json.content or ""):
         commands.append("npm test")
     if "pyproject.toml" in paths or "pytest.ini" in paths or any(path.startswith("tests/") for path in paths):
         commands.append("python -m pytest")
@@ -82,7 +82,7 @@ def infer_entrypoints(files: list[RepoFile]) -> list[str]:
     candidates = ["manage.py", "main.py", "app.py", "src/main.tsx", "src/App.tsx", "pages/index.tsx", "app/page.tsx", "cmd/main.go", "main.go"]
     discovered = [path for path in candidates if path in paths]
     pyproject = next((file for file in files if file.path == "pyproject.toml" and file.content), None)
-    if pyproject and "[project.scripts]" in pyproject.content:
+    if pyproject and "[project.scripts]" in (pyproject.content or ""):
         discovered.append("pyproject.toml:project.scripts")
     if any(file.path.endswith("api_v2.py") for file in files):
         discovered.append("github_ai_genius/api_v2.py")
@@ -107,7 +107,7 @@ def detect_license(files: list[RepoFile]) -> str | None:
                 return "BSD-2-Clause"
             return "Other"
     pyproject = next((file for file in files if file.path == "pyproject.toml" and file.content), None)
-    if pyproject and 'license = "MIT"' in pyproject.content:
+    if pyproject and 'license = "MIT"' in (pyproject.content or ""):
         return "MIT"
     return None
 
@@ -134,6 +134,6 @@ class RepositoryAnalyzer:
         for file in hydrated:
             if file.content:
                 findings.extend(scan_text_for_risks(file.path, file.content))
-        if not any(path.startswith("tests/") or path.endswith(".test.ts") or path.endswith("_test.go") for path in [file.path for file in tree]):
+        if not any(path.startswith("tests/") or path.endswith((".test.ts", "_test.go")) for path in [file.path for file in tree]):
             findings.append(Finding(title="Automated tests not detected", description="The repository tree does not expose a conventional test suite path or test file naming pattern.", level=RiskLevel.MEDIUM, remediation="Add tests for CLI commands, GitHub integration, policy enforcement, and generated project validation."))
         return RepositoryAnalysis(repository=repo.full_name, default_branch=default_branch, files_scanned=len(tree), total_bytes=total_bytes, languages=dict(language_counter.most_common()), frameworks=detect_frameworks(hydrated), package_managers=detect_package_managers(hydrated), entrypoints=infer_entrypoints(hydrated), test_commands=infer_test_commands(tree), findings=findings, license_name=detect_license(hydrated))

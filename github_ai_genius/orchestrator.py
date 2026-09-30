@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
 from .analyzer import RepositoryAnalyzer
@@ -14,6 +15,7 @@ from .project_state import ProjectStateStore
 from .quality import QualityGate
 from .readiness_score import ScoreEngine
 from .rebuilder import RebuildPlanner
+from .system_one import GeniusDecisionPlane
 
 
 class GeniusOrchestrator:
@@ -27,18 +29,36 @@ class GeniusOrchestrator:
         self.quality = QualityGate()
         self.rebuilder = RebuildPlanner(self.gaps)
         self.state = ProjectStateStore(settings.workspace_dir / 'project-state.json')
+        self.system_one = GeniusDecisionPlane(settings)
 
     async def execute(self, task: AgentTask) -> AgentResult:
         decision = evaluate_instruction(task.instruction, self.settings.allow_security_exploit_generation)
         if not decision.allowed:
             return AgentResult(False, 'Task blocked by policy', findings=decision.findings)
+
+        # System-One is advisory and must not delay or override the explicit
+        # task intent. Run it concurrently with the incumbent execution path,
+        # after the existing policy gate has allowed the task.
+        system_one_task = asyncio.create_task(
+            self.system_one.classify(
+                task.instruction,
+                explicit_intent=task.intent.value,
+            )
+        )
+
         if task.intent == TaskIntent.ANALYZE:
-            return await self._analyze(task)
-        if task.intent == TaskIntent.BUILD:
-            return await self._build(task)
-        if task.intent == TaskIntent.TRANSFORM:
-            return await self._plan_transform(task)
-        return AgentResult(False, 'Unsupported task intent')
+            result = await self._analyze(task)
+        elif task.intent == TaskIntent.BUILD:
+            result = await self._build(task)
+        elif task.intent == TaskIntent.TRANSFORM:
+            result = await self._plan_transform(task)
+        else:
+            result = AgentResult(False, 'Unsupported task intent')
+
+        system_one = await system_one_task
+        if system_one is not None:
+            result.artifacts.setdefault('system_one', system_one)
+        return result
 
     async def _analyze(self, task: AgentTask) -> AgentResult:
         if task.repository is None:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .models import Finding, RepositoryAnalysis, RiskLevel
+from .models import RepositoryAnalysis, RiskLevel
 
 
 @dataclass(slots=True)

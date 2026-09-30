@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     audit_log_path: Path = Field(default=Path(".genius/audit.jsonl"), alias="GENIUS_AUDIT_LOG_PATH")
     allow_incompatible_license_copy: bool = Field(default=False, alias="GENIUS_ALLOW_INCOMPATIBLE_LICENSE_COPY")
     allow_security_exploit_generation: bool = Field(default=False, alias="GENIUS_ALLOW_SECURITY_EXPLOIT_GENERATION")
+    system_one_mode: str = Field(default="off", alias="GENIUS_SYSTEM_ONE_MODE")
+    system_one_base_url: str = Field(default="", alias="GENIUS_SYSTEM_ONE_BASE_URL")
+    system_one_api_key: str = Field(default="", alias="GENIUS_SYSTEM_ONE_API_KEY")
+    system_one_timeout_seconds: float = Field(default=1.5, ge=0.1, le=30.0, alias="GENIUS_SYSTEM_ONE_TIMEOUT_SECONDS")
 
     def require_github_token(self) -> str:
         if not self.github_token:

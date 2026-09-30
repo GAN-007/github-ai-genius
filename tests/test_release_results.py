@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from github_ai_genius.release_results import ReleaseReport, ReleaseResult, load_release_report, write_release_report
+from github_ai_genius.release_results import (
+    ReleaseReport,
+    ReleaseResult,
+    load_release_report,
+    write_release_report,
+)
 
 
 def test_release_report_pass_rate():
